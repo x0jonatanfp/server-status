@@ -62,6 +62,8 @@ export interface AppConfig {
   logLevel: string;
   sudoPath: string;
   fail2banClientPath: string;
+  /** Helper NOPASSWD de desbaneo (`CARCEL IP` por stdin). */
+  fail2banUnbanHelperPath: string;
 }
 
 const DEFAULT_INVENTORY_PATH = "inventory.yaml";
@@ -70,6 +72,7 @@ const DEFAULT_UPDATE_INTERVAL_SECONDS = 300;
 const DEFAULT_HTTP_TIMEOUT_MS = 8000;
 const DEFAULT_SUDO_PATH = "/usr/bin/sudo";
 const DEFAULT_FAIL2BAN_CLIENT_PATH = "/usr/bin/fail2ban-client";
+const DEFAULT_FAIL2BAN_UNBAN_HELPER_PATH = "/usr/local/bin/f2b-unban";
 
 function readEnv(env: Record<string, string | undefined>, key: string): string | undefined {
   const raw = env[key];
@@ -206,6 +209,8 @@ export function parseAppConfig(env: Record<string, string | undefined>): AppConf
     logLevel: readEnv(env, "LOG_LEVEL") ?? DEFAULT_LOG_LEVEL,
     sudoPath: optionalEnv(env, "SUDO_PATH") ?? DEFAULT_SUDO_PATH,
     fail2banClientPath: optionalEnv(env, "FAIL2BAN_CLIENT") ?? DEFAULT_FAIL2BAN_CLIENT_PATH,
+    fail2banUnbanHelperPath:
+      optionalEnv(env, "FAIL2BAN_UNBAN_HELPER") ?? DEFAULT_FAIL2BAN_UNBAN_HELPER_PATH,
   };
 }
 

@@ -87,6 +87,7 @@ export async function main(): Promise<void> {
   const fail2ban = createFail2banClient({
     sudoPath: app.sudoPath,
     clientPath: app.fail2banClientPath,
+    helperPath: app.fail2banUnbanHelperPath,
   });
   const botStatus = createBotStatusPort(client);
 

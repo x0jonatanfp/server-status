@@ -53,17 +53,25 @@ function jailOutput(name: string, banned: number): string {
 }
 
 /**
- * Exec de mentira que responde a `status`, `status <carcel>` y `set`. El
- * adaptador invoca `sudo -n <fail2ban-client> ...`, asi que los argumentos que
- * llegan son `["-n", "/usr/bin/fail2ban-client", <comando>, ...]`.
+ * Exec de mentira. El estado va por `sudo -n <fail2ban-client> status ...`; el
+ * desbaneo, por `sudo -n <f2b-unban>` SIN argumentos, con `CARCEL IP` en stdin.
  */
 function fakeExec(
   overrides: { overview?: string; failJail?: string } = {},
-): { exec: ExecFileFn; calls: string[][] } {
+): { exec: ExecFileFn; calls: string[][]; unbans: string[] } {
   const calls: string[][] = [];
+  const unbans: string[] = [];
 
-  const exec: ExecFileFn = async (_file, args) => {
+  const exec: ExecFileFn = async (_file, args, options) => {
     calls.push(args);
+    // El helper de desbaneo: la orden viaja por stdin.
+    if (args[1] === "/usr/local/bin/f2b-unban") {
+      const order = options.input?.trim() ?? "";
+      unbans.push(order);
+      const jail = order.split(" ")[0] ?? "";
+      if (jail === overrides.failJail) throw new Error(`carcel desconocida: ${jail}`);
+      return { stdout: "0" };
+    }
     const command = args[2];
     if (command === "status") {
       const jail = args[3];
@@ -73,11 +81,10 @@ function fakeExec(
       if (jail === overrides.failJail) throw new Error(`carcel desconocida: ${jail}`);
       return { stdout: jailOutput(jail, BANNED[jail] ?? 0) };
     }
-    if (command === "set") return { stdout: args[5] ?? "" };
     throw new Error(`comando no esperado: ${args.join(" ")}`);
   };
 
-  return { exec, calls };
+  return { exec, calls, unbans };
 }
 
 describe("estado de fail2ban", () => {
@@ -149,25 +156,24 @@ describe("desbaneo", () => {
     expect(calls).toEqual([]);
   });
 
-  it("desbanea la IP en todas las carceles", async () => {
-    const { exec, calls } = fakeExec();
+  it("desbanea la IP en todas las carceles por el helper, con la orden por stdin", async () => {
+    const { exec, calls, unbans } = fakeExec();
     const result = await createFail2banClient({
       exec,
       sudoPath: "/usr/bin/sudo",
       clientPath: "/usr/bin/fail2ban-client",
+      helperPath: "/usr/local/bin/f2b-unban",
     }).unban("203.0.113.7");
 
     expect(result.ip).toBe("203.0.113.7");
     expect(result.jails.every((jail) => jail.ok)).toBe(true);
     expect(result.jails).toHaveLength(9);
-    expect(calls[1]).toEqual([
-      "-n",
-      "/usr/bin/fail2ban-client",
-      "set",
-      "dovecot",
-      "unbanip",
-      "203.0.113.7",
-    ]);
+    // Ni un `set <carcel> unbanip`: esa orden no esta en sudoers.
+    expect(calls.some((args) => args.includes("set"))).toBe(false);
+    expect(calls[1]).toEqual(["-n", "/usr/local/bin/f2b-unban"]);
+    expect(unbans).toHaveLength(9);
+    expect(unbans[0]).toBe("dovecot 203.0.113.7");
+    expect(unbans).toContain("sshd 203.0.113.7");
   });
 
   it("acepta una IPv6", async () => {
@@ -176,11 +182,14 @@ describe("desbaneo", () => {
   });
 
   it("informa del fallo por carcel sin lanzar", async () => {
-    const exec: ExecFileFn = async (_file, args) => {
+    const exec: ExecFileFn = async (_file, args, options) => {
+      if (args[1] === "/usr/local/bin/f2b-unban") {
+        if (options.input?.startsWith("sshd ")) throw new Error("no se pudo desbanear");
+        return { stdout: "0" };
+      }
       if (args[2] === "status" && args[3] === undefined) return { stdout: OVERVIEW };
       if (args[2] === "status") return { stdout: jailOutput(String(args[3]), 1) };
-      if (args[3] === "sshd") throw new Error("no se pudo desbanear");
-      return { stdout: "" };
+      throw new Error(`comando no esperado: ${args.join(" ")}`);
     };
 
     const result = await createFail2banClient({ exec }).unban("203.0.113.7");
