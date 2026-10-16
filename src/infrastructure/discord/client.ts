@@ -119,12 +119,29 @@ export function toCommandInteraction(
       }
 
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(payload);
+        const message = await interaction.followUp(payload);
+        scheduleDelete(() => message.delete(), reply.deleteAfterMs);
       } else {
         await interaction.reply(payload);
+        scheduleDelete(() => interaction.deleteReply(), reply.deleteAfterMs);
       }
     },
   };
+}
+
+/** Borra el mensaje pasado `afterMs`; sin valor no hace nada. */
+function scheduleDelete(remove: () => Promise<unknown>, afterMs: number | undefined): void {
+  if (afterMs === undefined) return;
+  const timer = setTimeout(() => {
+    void (async () => {
+      try {
+        await remove();
+      } catch {
+        // Ya no existe (o Discord no deja): no hay nada que hacer.
+      }
+    })();
+  }, afterMs);
+  timer.unref();
 }
 
 export async function handleInteraction(

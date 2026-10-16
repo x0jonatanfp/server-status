@@ -404,6 +404,7 @@ describe("toCommandInteraction", () => {
   function fakeInteraction(options: Record<string, unknown> = {}, roleNames: string[] = []) {
     const reply = vi.fn(async (_payload?: unknown) => undefined);
     const followUp = vi.fn(async (_payload?: unknown) => undefined);
+    const deleteReply = vi.fn(async () => undefined);
     const interaction = {
       channelId: "111111111111111111",
       replied: false,
@@ -418,8 +419,14 @@ describe("toCommandInteraction", () => {
       guild: { roles: { cache: new Map() } },
       reply,
       followUp,
+      deleteReply,
     };
-    return { interaction: interaction as unknown as ChatInputCommandInteraction, reply, followUp };
+    return {
+      interaction: interaction as unknown as ChatInputCommandInteraction,
+      reply,
+      followUp,
+      deleteReply,
+    };
   }
 
   it("lee opciones de texto, de canal y booleanas", () => {
@@ -462,5 +469,21 @@ describe("toCommandInteraction", () => {
 
     expect(reply).not.toHaveBeenCalled();
     expect(followUp).toHaveBeenCalledWith({ content: "hola" });
+  });
+
+  it("borra el mensaje pasado deleteAfterMs y no antes", async () => {
+    vi.useFakeTimers();
+    try {
+      const { interaction, deleteReply } = fakeInteraction();
+      const port = toCommandInteraction(interaction);
+
+      await port.reply({ content: "ok", ephemeral: true, deleteAfterMs: 5000 });
+      expect(deleteReply).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(deleteReply).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

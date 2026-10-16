@@ -25,6 +25,11 @@ export interface CommandReply {
   view?: StatusView;
   /** Por defecto los comandos responden solo a quien los invoca. */
   ephemeral?: boolean;
+  /**
+   * Si se indica, el mensaje se borra solo pasados esos milisegundos. Es para
+   * confirmaciones que no merecen quedarse (p. ej. el resultado de `/unban`).
+   */
+  deleteAfterMs?: number;
 }
 
 export interface CommandInteraction {

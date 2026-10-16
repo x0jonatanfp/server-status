@@ -19,6 +19,7 @@ import type {
   CommandReply,
 } from "../src/infrastructure/discord/commands/types.ts";
 import { InvalidIpError } from "../src/infrastructure/fail2ban/client.ts";
+import { UNBAN_RESULT_TTL_MS } from "../src/infrastructure/discord/commands/unban.ts";
 import { JsonStateStore } from "../src/infrastructure/persistence/state-store.ts";
 
 const CHANNEL = "111111111111111111";
@@ -286,19 +287,18 @@ describe("/botstatus", () => {
 });
 
 describe("/unban", () => {
-  it("desbanea la IP y resume el resultado", async () => {
+  it("desbanea la IP y resume el resultado en una linea efimera", async () => {
     const { context, unban } = harness();
     const replies = await run("unban", new FakeInteraction({ ip: "203.0.113.7" }), context);
 
     expect(unban).toHaveBeenCalledWith("203.0.113.7");
-    const text = replies[0]?.view?.blocks.join("\n") ?? "";
-    expect(text).toContain("Desbaneo de");
-    expect(text).toContain("203.0.113.7");
-    expect(text).toContain("las 2 cárceles");
-    expect(replies[0]?.view?.level).toBe("ok");
+    expect(replies[0]?.content).toBe("✅ 203.0.113.7 desbaneada en las 2 cárceles.");
+    expect(replies[0]?.view).toBeUndefined();
+    expect(replies[0]?.ephemeral).toBe(true);
+    expect(replies[0]?.deleteAfterMs).toBe(UNBAN_RESULT_TTL_MS);
   });
 
-  it("informa de las carceles que fallan", async () => {
+  it("dice cuantas carceles fallan y cuales, en la misma linea", async () => {
     const { context, unban } = harness();
     unban.mockResolvedValueOnce({
       ip: "203.0.113.7",
@@ -309,11 +309,9 @@ describe("/unban", () => {
     });
 
     const replies = await run("unban", new FakeInteraction({ ip: "203.0.113.7" }), context);
-    const text = replies[0]?.view?.blocks.join("\n") ?? "";
-    expect(text).toContain("1/2 cárceles");
-    expect(text).toContain("recidive");
-    expect(text).toContain("no se pudo");
-    expect(replies[0]?.view?.level).toBe("warning");
+    expect(replies[0]?.content).toBe(
+      "⚠️ 203.0.113.7 desbaneada en 1/2 cárceles. Fallan: recidive.",
+    );
   });
 
   it("no marca ✅ si no se ha desbaneado ninguna carcel", async () => {
@@ -327,10 +325,8 @@ describe("/unban", () => {
     });
 
     const replies = await run("unban", new FakeInteraction({ ip: "203.0.113.7" }), context);
-    const text = replies[0]?.view?.blocks.join("\n") ?? "";
-    expect(text).not.toContain("✅");
-    expect(text).toContain("ninguna de las 2 cárceles");
-    expect(replies[0]?.view?.level).toBe("critical");
+    expect(replies[0]?.content).not.toContain("✅");
+    expect(replies[0]?.content).toContain("ninguna de las 2 cárceles");
   });
 
   it("rechaza una IP invalida con el motivo y sin lanzar", async () => {
