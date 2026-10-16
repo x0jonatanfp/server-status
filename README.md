@@ -32,7 +32,8 @@ en el código.
 - Node 22 o superior
 - Linux con systemd
 - Opcional: `lm-sensors` y `smartmontools` para las temperaturas, y `fail2ban`
-  para el comando de desbaneo
+  para el comando de desbaneo (que usa un helper NOPASSWD para desbanear; ver
+  `FAIL2BAN_UNBAN_HELPER` en `.env.example`)
 
 ## Instalación
 
