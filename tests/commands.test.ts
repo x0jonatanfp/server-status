@@ -291,7 +291,11 @@ describe("/unban", () => {
     const replies = await run("unban", new FakeInteraction({ ip: "203.0.113.7" }), context);
 
     expect(unban).toHaveBeenCalledWith("203.0.113.7");
-    expect(replies[0]?.content).toContain("2/2 cárceles");
+    const text = replies[0]?.view?.blocks.join("\n") ?? "";
+    expect(text).toContain("Desbaneo de");
+    expect(text).toContain("203.0.113.7");
+    expect(text).toContain("las 2 cárceles");
+    expect(replies[0]?.view?.level).toBe("ok");
   });
 
   it("informa de las carceles que fallan", async () => {
@@ -305,8 +309,28 @@ describe("/unban", () => {
     });
 
     const replies = await run("unban", new FakeInteraction({ ip: "203.0.113.7" }), context);
-    expect(replies[0]?.content).toContain("1/2 cárceles");
-    expect(replies[0]?.content).toContain("recidive");
+    const text = replies[0]?.view?.blocks.join("\n") ?? "";
+    expect(text).toContain("1/2 cárceles");
+    expect(text).toContain("recidive");
+    expect(text).toContain("no se pudo");
+    expect(replies[0]?.view?.level).toBe("warning");
+  });
+
+  it("no marca ✅ si no se ha desbaneado ninguna carcel", async () => {
+    const { context, unban } = harness();
+    unban.mockResolvedValueOnce({
+      ip: "203.0.113.7",
+      jails: [
+        { name: "sshd", ok: false, error: "sin permiso" },
+        { name: "recidive", ok: false, error: "sin permiso" },
+      ],
+    });
+
+    const replies = await run("unban", new FakeInteraction({ ip: "203.0.113.7" }), context);
+    const text = replies[0]?.view?.blocks.join("\n") ?? "";
+    expect(text).not.toContain("✅");
+    expect(text).toContain("ninguna de las 2 cárceles");
+    expect(replies[0]?.view?.level).toBe("critical");
   });
 
   it("rechaza una IP invalida con el motivo y sin lanzar", async () => {
@@ -344,8 +368,10 @@ describe("/help-unban", () => {
     const { context } = harness({ requiredRoles: ["ServerManager"] });
     const replies = await run("help-unban", new FakeInteraction(), context);
 
-    const content = replies[0]?.content ?? "";
-    expect(content).toContain("/unban <ip>");
-    expect(content).toContain("ServerManager");
+    const text = replies[0]?.view?.blocks.join("\n") ?? "";
+    expect(text).toContain("/unban <ip>");
+    expect(text).toContain("ServerManager");
+    expect(replies[0]?.view?.level).toBe("ok");
+    expect(replies[0]?.ephemeral).toBe(true);
   });
 });
