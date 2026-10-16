@@ -1,13 +1,16 @@
 /**
  * `/help-unban` — ayuda del desbaneo, en un contenedor como el mensaje de estado.
  *
+ * Se responde en publico (no efimero): la ayuda se queda visible para todos. Es
+ * el resultado de `/unban` el que es efimero y desaparece.
+ *
  * Porta el contenido del embed antiguo (qué es, pasos para recuperar el acceso,
  * ejemplo, qué cárceles se tocan, permisos) al estilo del bot nuevo.
  */
 import { SlashCommandBuilder } from "discord.js";
 
 import { ensureRole } from "./access.ts";
-import { commandView } from "./view.ts";
+import { infoView } from "./view.ts";
 import type { CommandDefinition } from "./types.ts";
 
 export const helpUnbanCommand: CommandDefinition = {
@@ -57,8 +60,10 @@ export const helpUnbanCommand: CommandDefinition = {
     ];
 
     await interaction.reply({
-      view: commandView(blocks, "ok", context.inventory.display.colors),
-      ephemeral: true,
+      // Publico a proposito: la ayuda se queda a la vista de todo el mundo, no
+      // solo de quien escribe el comando (el efimero es el resultado de /unban).
+      view: infoView(blocks, context.inventory.display.colors),
+      ephemeral: false,
     });
   },
 };

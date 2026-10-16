@@ -372,6 +372,8 @@ describe("/help-unban", () => {
     expect(text).toContain("/unban <ip>");
     expect(text).toContain("ServerManager");
     expect(replies[0]?.view?.level).toBe("ok");
-    expect(replies[0]?.ephemeral).toBe(true);
+    // Morado del inventario y visible para todos (no efimero).
+    expect(replies[0]?.view?.accentColor).toBe(0xa159ff);
+    expect(replies[0]?.ephemeral).toBe(false);
   });
 });
