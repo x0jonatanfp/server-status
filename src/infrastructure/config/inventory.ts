@@ -54,7 +54,7 @@ const DEFAULT_DISPLAY: DisplaySettings = {
   showFail2banBreakdown: true,
   showPing: true,
   progressBarBlocks: 10,
-  colors: { ok: "#00FF41", warning: "#FFAA00", critical: "#FF0040" },
+  colors: { ok: "#00FF41", warning: "#FFAA00", critical: "#FF0040", info: "#A159FF" },
 };
 
 /**
@@ -245,9 +245,9 @@ function parseResources(value: unknown): ResourceSettings {
 
 function parseColors(value: unknown): DisplayColors {
   const object = expectObject(value, "inventory.display.colors");
-  expectKnownKeys(object, ["ok", "warning", "critical"], "inventory.display.colors");
+  expectKnownKeys(object, ["ok", "warning", "critical", "info"], "inventory.display.colors");
   const colors = { ...DEFAULT_DISPLAY.colors };
-  for (const key of ["ok", "warning", "critical"] as const) {
+  for (const key of ["ok", "warning", "critical", "info"] as const) {
     if (object[key] === undefined) continue;
     const color = expectString(object[key], `inventory.display.colors.${key}`);
     if (!/^#[0-9a-fA-F]{6}$/.test(color)) {

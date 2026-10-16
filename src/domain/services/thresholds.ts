@@ -99,8 +99,13 @@ export function stateMark(state: ServiceState): string {
 }
 
 /** Convierte `#RRGGBB` en el entero que espera el acento del Container. */
+export function accentColorFromHex(hex: string): number {
+  return Number.parseInt(hex.slice(1), 16);
+}
+
+/** Acento del mensaje segun su nivel global. */
 export function accentColor(level: Level, colors: DisplayColors): number {
   const hex =
     level === "critical" ? colors.critical : level === "warning" ? colors.warning : colors.ok;
-  return Number.parseInt(hex.slice(1), 16);
+  return accentColorFromHex(hex);
 }

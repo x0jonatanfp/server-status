@@ -78,6 +78,8 @@ export interface DisplayColors {
   ok: string;
   warning: string;
   critical: string;
+  /** Acento de los mensajes de ayuda (morado), no ligado a un nivel. */
+  info: string;
 }
 
 /** Que se muestra en el mensaje y con que colores. */

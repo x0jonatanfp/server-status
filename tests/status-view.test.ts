@@ -54,7 +54,7 @@ const DISPLAY: DisplaySettings = {
   showFail2banBreakdown: true,
   showPing: true,
   progressBarBlocks: 10,
-  colors: { ok: "#00FF41", warning: "#FFAA00", critical: "#FF0040" },
+  colors: { ok: "#00FF41", warning: "#FFAA00", critical: "#FF0040", info: "#A159FF" },
 };
 
 const THRESHOLDS: Record<MetricKey, MetricThreshold> = {

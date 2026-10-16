@@ -216,7 +216,7 @@ describe("loadAppConfig + loadInventory", () => {
       showFail2banBreakdown: true,
       showPing: true,
       progressBarBlocks: 10,
-      colors: { ok: "#00FF41", warning: "#FFAA00", critical: "#FF0040" },
+      colors: { ok: "#00FF41", warning: "#FFAA00", critical: "#FF0040", info: "#A159FF" },
     });
     expect(inventory.alerts.cooldownMinutes).toBe(30);
     expect(inventory.alerts.thresholds.ping_ms).toEqual({ warn: 100, crit: 500 });
@@ -280,6 +280,7 @@ describe("loadAppConfig + loadInventory", () => {
       ok: "#000000",
       warning: "#FFAA00",
       critical: "#FF0040",
+      info: "#A159FF",
     });
     expect(inventory.alerts.cooldownMinutes).toBe(5);
     expect(inventory.alerts.thresholds.cpu_percent).toEqual({ warn: 1, crit: 2 });

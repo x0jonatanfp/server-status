@@ -95,6 +95,8 @@ display:
     ok: "#00FF41"
     warning: "#FFAA00"
     critical: "#FF0040"
+    # Acento de los mensajes de ayuda (/help-unban), que no tienen nivel.
+    info: "#A159FF"
 
 # Umbrales de alerta. El cooldown evita repetir la misma alerta en cada ciclo.
 alerts:
