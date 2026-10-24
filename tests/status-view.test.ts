@@ -228,6 +228,18 @@ describe("renderStatusView", () => {
     expect(critical.accentColor).toBe(0xff0040);
   });
 
+  it("el ping del bot no pinta el acento, aunque pase del umbral critico", () => {
+    const view = renderStatusView(
+      snapshot({ bot: { pingMs: 600, uptimeSeconds: 3600 } }),
+      options(),
+    );
+
+    expect(view.level).toBe("ok");
+    expect(view.accentColor).toBe(0x00ff41);
+    // La latencia se sigue viendo en su bloque.
+    expect(section(view, "📡")).toBe("📡 RED\nBot 600 ms");
+  });
+
   it("pinta las seis filas con su emoji, su etiqueta y su valor", () => {
     const rows = resourceRows(renderStatusView(snapshot(), options()));
 

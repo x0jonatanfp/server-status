@@ -89,7 +89,10 @@ export interface StatusRendererOptions {
   display: DisplaySettings;
   /** Filas de recursos: etiquetas, emojis y sensores enlazados. */
   resources: ResourceSettings;
-  /** Umbrales de recursos y de latencia (`alerts.thresholds` del inventario). */
+  /**
+   * Umbrales de recursos (`alerts.thresholds` del inventario). Los de latencia
+   * vienen en el mismo mapa, pero aqui no se usan: el ping no pinta el acento.
+   */
   thresholds: Record<MetricKey, MetricThreshold>;
   updateIntervalSeconds: number;
   version: string;
@@ -123,12 +126,13 @@ export function renderStatusView(
     levelFromTemperature(reading.celsius, reading.warn, reading.crit),
   );
 
+  // El ping del bot no entra en el nivel global: es un dato informativo y el WSS
+  // de Discord ronda el umbral de aviso, asi que dejaba el panel siempre en ambar.
   const level = worstLevel([
     ...resources.levels,
     ...temperatures,
     ...services.levels,
     ...websites.levels,
-    levelFromThreshold(snapshot.bot.pingMs, options.thresholds.ping_ms),
   ]);
 
   const blocks = [resources.text, services.text, websites.text, network, fail2ban, footer].filter(
