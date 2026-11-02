@@ -30,3 +30,6 @@ skills-lock.json
 .DS_Store
 __pycache__/
 coverage/
+
+# Planes y notas efímeras de agentes (no se versionan)
+tmp/
