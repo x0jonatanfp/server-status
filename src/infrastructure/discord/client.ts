@@ -290,27 +290,66 @@ export function attachPresence(
   return refresh;
 }
 
+/** Tiempo maximo entre un login correcto y `ClientReady` antes de rendirse. */
+export const READY_TIMEOUT_MS = 60_000;
+
 /**
  * Conecta el cliente y fija los comandos al estar listo. La presencia va aparte,
  * con `attachPresence`: tiene que reenviarse al reconectar, no solo al arrancar.
+ *
+ * Si el login falla, o si tras el login el cliente no llega a `ClientReady` en
+ * `readyTimeoutMs`, el cliente de discord.js se destruye y el proceso sale con
+ * 1. Sin esto el `Client` sigue reintentando por dentro, mantiene vivo el event
+ * loop y systemd ve un servicio "activo" que en realidad esta caido.
  */
 export async function connect(options: {
   client: Client;
   config: AppConfig;
   logger: LoggerPort;
   onReady: (client: Client<true>) => void | Promise<void>;
+  exit: (code: number) => void;
+  readyTimeoutMs?: number;
 }): Promise<void> {
   const { client, config, logger } = options;
 
   client.on(Events.Warn, (message: string) => logger.warn(`discord: ${message}`));
   client.on(Events.Error, (error: Error) => logger.error(`discord: ${error.message}`));
 
+  const fail = (reason: string): void => {
+    logger.error(reason);
+    try {
+      client.destroy();
+    } catch (error) {
+      logger.error(
+        `no se ha podido destruir el cliente: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    options.exit(1);
+  };
+
+  const readyTimer: { current?: NodeJS.Timeout } = {};
+
   client.once(Events.ClientReady, (ready) => {
+    clearTimeout(readyTimer.current);
     void (async () => {
       logger.info(`conectado como ${ready.user.tag} (${ready.user.id})`);
       await options.onReady(ready);
     })();
   });
 
-  await client.login(config.discordToken);
+  try {
+    await client.login(config.discordToken);
+  } catch (error) {
+    fail(
+      `no se ha podido conectar con Discord: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return;
+  }
+
+  if (client.isReady()) return;
+  const readyTimeoutMs = options.readyTimeoutMs ?? READY_TIMEOUT_MS;
+  readyTimer.current = setTimeout(() => {
+    fail(`Discord no ha dejado listo el cliente en ${readyTimeoutMs} ms`);
+  }, readyTimeoutMs);
+  readyTimer.current.unref();
 }

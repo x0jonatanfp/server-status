@@ -161,22 +161,18 @@ export async function main(): Promise<void> {
   process.once("SIGINT", () => void shutdown("SIGINT"));
   process.once("SIGTERM", () => void shutdown("SIGTERM"));
 
-  try {
-    await connect({
-      client,
-      config: app,
-      logger,
-      onReady: async (ready) => {
-        await registerCommands(ready, app.guildId, logger);
-        scheduler.start();
-      },
-    });
-  } catch (error) {
-    logger.error(
-      `no se ha podido conectar con Discord: ${error instanceof Error ? error.message : String(error)}`,
-    );
-    process.exitCode = 1;
-  }
+  // Si el login falla o el cliente no llega a estar listo, connect() lo destruye
+  // y sale con 1 para que systemd reinicie el servicio.
+  await connect({
+    client,
+    config: app,
+    logger,
+    exit: (code) => process.exit(code),
+    onReady: async (ready) => {
+      await registerCommands(ready, app.guildId, logger);
+      scheduler.start();
+    },
+  });
 }
 
 // Solo arranca cuando se ejecuta como programa, no al importarlo desde los tests.

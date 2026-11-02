@@ -9,10 +9,15 @@ import {
 import { describe, expect, it, vi } from "vitest";
 
 import type { StatusView } from "../src/domain/entities/status-view.ts";
-import { ACTIVITY_TYPE_NAMES, type ActivityConfig } from "../src/infrastructure/config/env.ts";
+import {
+  ACTIVITY_TYPE_NAMES,
+  type ActivityConfig,
+  type AppConfig,
+} from "../src/infrastructure/config/env.ts";
 import {
   attachPresence,
   buildActivity,
+  connect,
   createBotStatusPort,
   createShutdown,
   registerCommands,
@@ -146,6 +151,105 @@ describe("createShutdown", () => {
 
     expect(log.error).toHaveBeenCalled();
     expect(exit).toHaveBeenCalledWith(1);
+  });
+});
+
+describe("connect", () => {
+  const config = { discordToken: "token-de-prueba" } as unknown as AppConfig;
+
+  /** Cliente de mentira: login configurable y sin red. */
+  function fakeClient(login: () => Promise<string>, ready = false) {
+    const handlers = new Map<string, (arg?: unknown) => void>();
+    const destroy = vi.fn();
+    const client = {
+      isReady: () => ready,
+      login: vi.fn(login),
+      destroy,
+      on: (event: string, handler: () => void) => {
+        handlers.set(event, handler);
+      },
+      once: (event: string, handler: () => void) => {
+        handlers.set(event, handler);
+      },
+    } as unknown as Client;
+    return { client, handlers, destroy };
+  }
+
+  it("si el login se rechaza, destruye el cliente y sale con 1", async () => {
+    const { client, destroy } = fakeClient(() => Promise.reject(new Error("handshake timeout")));
+    const exit = vi.fn();
+    const log = logger();
+
+    await connect({ client, config, logger: log, onReady: vi.fn(), exit });
+
+    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1);
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining("handshake timeout"));
+  });
+
+  it("sale con 1 aunque destroy falle", async () => {
+    const { client, destroy } = fakeClient(() => Promise.reject(new Error("boom")));
+    destroy.mockImplementation(() => {
+      throw new Error("ya cerrado");
+    });
+    const exit = vi.fn();
+
+    await connect({ client, config, logger: logger(), onReady: vi.fn(), exit });
+
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1);
+  });
+
+  it("con login correcto y cliente listo, no destruye ni sale", async () => {
+    vi.useFakeTimers();
+    try {
+      const { client, destroy } = fakeClient(() => Promise.resolve("ok"), true);
+      const exit = vi.fn();
+
+      await connect({ client, config, logger: logger(), onReady: vi.fn(), exit, readyTimeoutMs: 100 });
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(destroy).not.toHaveBeenCalled();
+      expect(exit).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("si el login resuelve pero el cliente nunca queda listo, sale con 1 tras el timeout", async () => {
+    vi.useFakeTimers();
+    try {
+      const { client, destroy } = fakeClient(() => Promise.resolve("ok"));
+      const exit = vi.fn();
+
+      await connect({ client, config, logger: logger(), onReady: vi.fn(), exit, readyTimeoutMs: 100 });
+      await vi.advanceTimersByTimeAsync(99);
+      expect(exit).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(destroy).toHaveBeenCalledTimes(1);
+      expect(exit).toHaveBeenCalledExactlyOnceWith(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("si llega ClientReady a tiempo, cancela el timeout y llama a onReady", async () => {
+    vi.useFakeTimers();
+    try {
+      const { client, handlers, destroy } = fakeClient(() => Promise.resolve("ok"));
+      const exit = vi.fn();
+      const onReady = vi.fn();
+
+      await connect({ client, config, logger: logger(), onReady, exit, readyTimeoutMs: 100 });
+      handlers.get(Events.ClientReady)?.({ user: { tag: "bot#0001", id: "1" } });
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(onReady).toHaveBeenCalledTimes(1);
+      expect(destroy).not.toHaveBeenCalled();
+      expect(exit).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
