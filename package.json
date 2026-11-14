@@ -1,6 +1,6 @@
 {
   "name": "server-status",
-  "version": "2.18.2",
+  "version": "1.3.2",
   "private": true,
   "type": "module",
   "description": "Bot de Discord que publica el estado de la maquina: metricas, temperaturas, servicios y webs",
