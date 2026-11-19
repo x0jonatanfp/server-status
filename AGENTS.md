@@ -1,77 +1,77 @@
 # AGENTS.md · server-status
 
-Guía para agentes de código. Qué es, cómo se instala y cómo se configura para personas está en `README.md`.
+Guide for coding agents. What it is, how it is installed and how it is configured for people is in `README.md`.
 
-## Qué es
+## What it is
 
-Bot de Discord (TypeScript ESM, Node 22+) que publica el estado de una máquina Linux en **un único mensaje que se edita** en cada ciclo: métricas (CPU, GPU, RAM, volúmenes), temperaturas, unidades systemd, webs por HTTP y fail2ban. También comprueba umbrales y avisa con cooldown, y expone comandos slash.
+Discord bot (TypeScript ESM, Node 22+) that publishes the status of a Linux machine in **a single message that is edited** on every cycle: metrics (CPU, GPU, RAM, volumes), temperatures, systemd units, websites over HTTP and fail2ban. It also checks thresholds and raises alerts with a cooldown, and exposes slash commands.
 
-Todo lo que se monitoriza sale de `inventory.yaml` (plantilla: `inventory.yaml.example`). No hay hosts, servicios ni canales en el código.
+Everything that is monitored comes from `inventory.yaml` (template: `inventory.yaml.example`). There are no hosts, services or channels in the code.
 
-## Arquitectura
+## Architecture
 
-Hexagonal. Capas: `src/domain/` → `src/application/` → `src/infrastructure/`, y el composition root en `src/index.ts`.
+Hexagonal. Layers: `src/domain/` → `src/application/` → `src/infrastructure/`, and the composition root in `src/index.ts`.
 
 - `src/domain/entities/`: `status-snapshot`, `system-metrics`, `temperature-reading`, `service-status`, `website-status`, `fail2ban-status`, `alert`, `inventory`, `status-view`.
-- `src/domain/ports/`: puertos (`metrics`, `temperatures`, `services`, `websites`, `fail2ban`, `bot-status`, `state-store`, `status-renderer`, `status-publisher`, `alerts`, `logger`).
-- `src/domain/services/`: lógica pura (`thresholds.ts`, `temperatures.ts`, `format.ts`).
+- `src/domain/ports/`: ports (`metrics`, `temperatures`, `services`, `websites`, `fail2ban`, `bot-status`, `state-store`, `status-renderer`, `status-publisher`, `alerts`, `logger`).
+- `src/domain/services/`: pure logic (`thresholds.ts`, `temperatures.ts`, `format.ts`).
 - `src/application/`:
-  - `collect-status.ts`: une los puertos de recolección en un `StatusSnapshot`.
-  - `publish-status.ts`: `StatusLoop`. Un ciclo recolecta, renderiza, edita el mensaje y persiste su id. Los ciclos no se solapan, y los fallos se registran sin parar el bucle.
-  - `check-alerts.ts`: `AlertChecker`, que evalúa umbrales con cooldown.
-- `src/infrastructure/`: adaptadores que tocan el sistema o la red.
-  - `metrics/`: `systeminformation`, `/sys/class/drm` (GPU), `/sys/class/hwmon` y `smartctl` (temperaturas).
+  - `collect-status.ts`: joins the collection ports into a `StatusSnapshot`.
+  - `publish-status.ts`: `StatusLoop`. A cycle collects, renders, edits the message and persists its id. Cycles do not overlap, and failures are logged without stopping the loop.
+  - `check-alerts.ts`: `AlertChecker`, which evaluates thresholds with a cooldown.
+- `src/infrastructure/`: adapters that touch the system or the network.
+  - `metrics/`: `systeminformation`, `/sys/class/drm` (GPU), `/sys/class/hwmon` and `smartctl` (temperatures).
   - `systemd/service-status.ts`, `http/website-probe.ts`, `fail2ban/client.ts`.
-  - `discord/`: `client.ts` (cliente, presencia, conexión, interacciones), `publisher.ts`, `status-view.ts` (render en Components V2), `commands/`.
+  - `discord/`: `client.ts` (client, presence, connection, interactions), `publisher.ts`, `status-view.ts` (render in Components V2), `commands/`.
   - `persistence/state-store.ts`, `config/` (`env.ts`, `inventory.ts`, `validation.ts`, `version.ts`), `logging/logger.ts`, `exec.ts`.
-- `src/index.ts`: `main()` cablea adaptadores con puertos. Carga la configuración y el inventario; si fallan, `ConfigError` aborta con código 1. Solo arranca cuando se ejecuta como programa, nunca al importarlo desde tests.
+- `src/index.ts`: `main()` wires adapters to ports. It loads the configuration and the inventory; if they fail, `ConfigError` aborts with exit code 1. It only starts when run as a program, never when imported from tests.
 
-Flujo: `StatusLoop` → `collectStatus` (puertos) → `renderer` → `publisher` (edita el mensaje) → `AlertChecker`. Los comandos de `commands/` leen el mismo `context` (scheduler, store, collect, render, unban).
+Flow: `StatusLoop` → `collectStatus` (ports) → `renderer` → `publisher` (edits the message) → `AlertChecker`. The commands in `commands/` read the same `context` (scheduler, store, collect, render, unban).
 
-## Comandos
+## Commands
 
-| Comando | Qué hace |
+| Command | What it does |
 | --- | --- |
-| `pnpm install` | Instala dependencias (pnpm 11, fijado en `packageManager`). |
+| `pnpm install` | Installs dependencies (pnpm 11, pinned in `packageManager`). |
 | `pnpm dev` | `tsx watch src/index.ts`. |
-| `pnpm build` | Bundle único con esbuild en `dist/index.js`. No necesita `node_modules` en destino. |
+| `pnpm build` | Single bundle with esbuild in `dist/index.js`. It does not need `node_modules` at the destination. |
 | `pnpm start` | `node dist/index.js`. |
 | `pnpm typecheck` | `tsc --noEmit`. |
 | `pnpm lint` | `eslint .` (`eslint.config.js`). |
 | `pnpm test` / `test:watch` / `test:coverage` | Vitest. |
-| `make check` | typecheck, test y lint. |
-| `make deploy` | Depende de `release`: ejecuta el versionado y `git push --follow-tags`. Después hace build, sincroniza `dist/` y copia `package.json` e `inventory.yaml` al destino, y reinicia la unidad. **Usa `sudo` y publica en remoto. No lo lances sin orden expresa.** |
-| `make install` | Instala unidad, tmpfiles y logrotate, y habilita la unidad. **Una sola vez, con `sudo`.** |
-| `make release` | Exige árbol limpio, ejecuta `commit-and-tag-version` y hace push. |
-| `pnpm restart`, `pnpm status`, `pnpm logs` | Atajos a `systemctl`/`journalctl` de la unidad. `restart` usa `sudo`. |
+| `make check` | typecheck, test and lint. |
+| `make deploy` | Depends on `release`: runs the versioning and `git push --follow-tags`. Then it builds, syncs `dist/`, copies `package.json` and `inventory.yaml` to the destination, and restarts the unit. **Uses `sudo` and publishes to the remote. Do not run it without an explicit order.** |
+| `make install` | Installs the unit, tmpfiles and logrotate, and enables the unit. **Once only, with `sudo`.** |
+| `make release` | Requires a clean tree, runs `commit-and-tag-version` and pushes. |
+| `pnpm restart`, `pnpm status`, `pnpm logs` | Shortcuts to the unit's `systemctl`/`journalctl`. `restart` uses `sudo`. |
 
-## Cómo probar un cambio
+## How to test a change
 
-- Tests en `tests/*.test.ts`, con Vitest 5. Hay un snapshot en `tests/__snapshots__/status-view.test.ts.snap`: si cambia el render, el snapshot cambia. Revísalo antes de actualizarlo.
-- Los casos de uso se prueban con dobles de los puertos (`alert-manager`, `collect-status`, `scheduler`, `commands`, `discord-adapter`...). Ningún test debe tocar el sistema real, Discord ni la red.
-- Un solo fichero, derivado del script `test`: `pnpm vitest run tests/collect-status.test.ts`.
-- Antes de dar un cambio por bueno: `make check` (typecheck, test y lint).
-- Cada comportamiento nuevo o bug corregido lleva su test en el mismo cambio.
+- Tests in `tests/*.test.ts`, with Vitest 5. There is a snapshot in `tests/__snapshots__/status-view.test.ts.snap`: if the render changes, the snapshot changes. Review it before updating it.
+- Use cases are tested with doubles of the ports (`alert-manager`, `collect-status`, `scheduler`, `commands`, `discord-adapter`...). No test may touch the real system, Discord or the network.
+- A single file, derived from the `test` script: `pnpm vitest run tests/collect-status.test.ts`.
+- Before accepting a change: `make check` (typecheck, test and lint).
+- Every new behaviour or fixed bug comes with its test in the same change.
 
-## Convenciones
+## Conventions
 
-- Gestor: **pnpm** (`pnpm-lock.yaml`, `pnpm-workspace.yaml`).
-- Imports con extensión `.ts` (`allowImportingTsExtensions` en `tsconfig.json`, `noEmit`). Ojo: en otros repos del grupo es `.js`; aquí es `.ts`.
-- Código y nombres en inglés. Comentarios y docstrings en español, explicando el porqué (así está en el código actual).
-- Versión y `CHANGELOG.md` los genera `commit-and-tag-version` (`.versionrc.json`) con `make release`. **No se editan a mano.** La versión también aparece en `src/infrastructure/config/version.ts`, que se lee desde `package.json`; revisa ese fichero si un cambio lo toca.
-- Configuración: `.env` (no versionado) a partir de `.env.example`; `inventory.yaml` (no versionado) a partir de `inventory.yaml.example`. Ambos abortan el arranque si son inválidos.
+- Package manager: **pnpm** (`pnpm-lock.yaml`, `pnpm-workspace.yaml`).
+- Imports with the `.ts` extension (`allowImportingTsExtensions` in `tsconfig.json`, `noEmit`). Note: in other repos of the group it is `.js`; here it is `.ts`.
+- Code and names in English. Comments and docstrings in Spanish, explaining the why (this is how the current code is written).
+- The version and `CHANGELOG.md` are generated by `commit-and-tag-version` (`.versionrc.json`) with `make release`. **Not edited by hand.** The version also appears in `src/infrastructure/config/version.ts`, which is read from `package.json`; check that file if a change touches it.
+- Configuration: `.env` (not versioned) based on `.env.example`; `inventory.yaml` (not versioned) based on `inventory.yaml.example`. Both abort startup if they are invalid.
 
-## Decisiones y trampas
+## Decisions and pitfalls
 
-- **Edición, no reenvío.** Un único mensaje por canal que se edita en cada ciclo, para no perder reacciones ni hilos. Si `STATUS_CHANNEL_IDS` cambia o se usa `/set_channel`, el id persiste en el estado (`store.getStatusChannelId()`) y tiene prioridad sobre el `.env`.
-- **Presencia.** El estado personalizado de Discord caduca con las horas, por eso `refreshPresence` se llama en cada ciclo y al (re)conectar (`attachPresence`).
-- **Login fallido = salida con código 1.** `connect()` destruye el cliente y sale para que systemd reinicie el servicio. No conviertas esto en un reintento silencioso.
-- **fail2ban y sudo.** Las consultas van por `sudo -n` (`fail2ban/client.ts`). Las reglas de sudoers con comodines en argumentos no funcionan en Ubuntu 26.04, así que el desbaneo pasa por un helper que recibe la cárcel y la IP por stdin. Cambiar esto requiere tocar también la configuración del sistema, no solo el código.
-- **Unidad systemd.** Con `NoNewPrivileges` no funcionaría `sudo`, por eso la unidad no lo activa. Cualquier endurecimiento de la unidad debe comprobar antes el comando de fail2ban.
-- **`make deploy` copia `inventory.yaml`** desde el directorio de trabajo. Ese fichero es local (ignorado por git): sin él, el despliegue no tiene inventario real. No lo versiones.
-- **El bundle no lleva `node_modules`.** Se genera con esbuild con un banner que define `require` para dependencias CJS. Si añades una dependencia que requiera `require` en tiempo de ejecución, verifica el bundle con `pnpm build && pnpm start`.
+- **Edit, not resend.** A single message per channel that is edited on every cycle, so reactions and threads are not lost. If `STATUS_CHANNEL_IDS` changes or `/set_channel` is used, the id is persisted in the state (`store.getStatusChannelId()`) and takes precedence over `.env`.
+- **Presence.** Discord's custom status expires after some hours, so `refreshPresence` is called on every cycle and on (re)connection (`attachPresence`).
+- **Failed login = exit with code 1.** `connect()` destroys the client and exits so that systemd restarts the service. Do not turn this into a silent retry.
+- **fail2ban and sudo.** Queries go through `sudo -n` (`fail2ban/client.ts`). Sudoers rules with wildcards in arguments do not work on Ubuntu 26.04, so the unban goes through a helper that receives the jail and the IP on stdin. Changing this requires touching the system configuration as well, not only the code.
+- **systemd unit.** With `NoNewPrivileges` `sudo` would not work, which is why the unit does not enable it. Any hardening of the unit must first check the fail2ban command.
+- **`make deploy` copies `inventory.yaml`** from the working directory. That file is local (ignored by git): without it, the deployment has no real inventory. Do not version it.
+- **The bundle does not include `node_modules`.** It is generated with esbuild with a banner that defines `require` for CJS dependencies. If you add a dependency that needs `require` at runtime, verify the bundle with `pnpm build && pnpm start`.
 
-## Mantenimiento
+## Maintenance
 
-- Este fichero y el `README.md` se actualizan en el mismo cambio que los deja obsoletos.
-- Aquí solo va lo que puede ser público: nada de rutas locales, puertos de la máquina, IPs, perfiles de secretos ni datos personales.
+- This file and the `README.md` are updated in the same change that makes them outdated.
+- Only publishable content goes here: no local paths, machine ports, IPs, secret profiles or personal data.
