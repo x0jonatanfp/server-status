@@ -7,6 +7,8 @@ servicios systemd, webs y latencias, en un solo mensaje que se edita.**
 
 </div>
 
+[English](README.md)
+
 ---
 
 ## Qué hace
