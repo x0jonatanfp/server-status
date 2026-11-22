@@ -536,15 +536,15 @@ describe("toCommandInteraction", () => {
   it("lee opciones de texto, de canal y booleanas", () => {
     const { interaction } = fakeInteraction({
       ip: { value: "203.0.113.7" },
-      canal: { value: {}, channel: { id: "111111111111111111" } },
-      publico: true,
+      channel: { value: {}, channel: { id: "111111111111111111" } },
+      public: true,
     });
     const port = toCommandInteraction(interaction);
 
     expect(port.getString("ip")).toBe("203.0.113.7");
-    expect(port.getString("canal")).toBe("111111111111111111");
-    expect(port.getBoolean("publico")).toBe(true);
-    expect(port.getString("inexistente")).toBeNull();
+    expect(port.getString("channel")).toBe("111111111111111111");
+    expect(port.getBoolean("public")).toBe(true);
+    expect(port.getString("nonexistent")).toBeNull();
   });
 
   it("lee los nombres de los roles", () => {

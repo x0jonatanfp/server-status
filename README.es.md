@@ -82,7 +82,7 @@ suya. Para montarlo:
 | Comando | Qué hace | Permisos |
 |---|---|---|
 | `/status` | Estado completo, como respuesta efímera | rol configurado |
-| `/set_channel [canal]` | Fija el canal de publicación y publica ya | Administrador |
+| `/set_channel [channel]` | Fija el canal de publicación y publica ya | Administrador |
 | `/update` | Fuerza una actualización inmediata | Administrador |
 | `/botstatus` | Estado del bot: ciclo, latencia y última publicación | Administrador |
 | `/unban <ip>` | Desbanea la IP de todas las cárceles de fail2ban | rol configurado |

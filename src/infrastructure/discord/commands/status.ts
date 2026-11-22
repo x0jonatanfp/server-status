@@ -1,7 +1,7 @@
 /**
  * `/status` — estado completo del sistema.
  *
- * Responde solo a quien lo invoca (salvo que se pida `publico`), para no llenar
+ * Responde solo a quien lo invoca (salvo que se pida `public`), para no llenar
  * el canal de mensajes de estado duplicados.
  */
 import { SlashCommandBuilder } from "discord.js";
@@ -15,7 +15,7 @@ export const statusCommand: CommandDefinition = {
     .setDescription("Muestra el estado completo del sistema (solo para ti por defecto)")
     .addBooleanOption((option) =>
       option
-        .setName("publico")
+        .setName("public")
         .setDescription("Publicar la respuesta en el canal en vez de solo para ti"),
     ),
 
@@ -25,7 +25,7 @@ export const statusCommand: CommandDefinition = {
     const snapshot = await context.collect();
     await interaction.reply({
       view: context.render(snapshot),
-      ephemeral: !interaction.getBoolean("publico"),
+      ephemeral: !interaction.getBoolean("public"),
     });
   },
 };

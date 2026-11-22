@@ -1,5 +1,5 @@
 /**
- * `/set_channel [canal]` — canal donde se publica el estado.
+ * `/set_channel [channel]` — canal donde se publica el estado.
  *
  * El canal se guarda en el estado del bot, asi que sobrevive a un reinicio: el
  * bug del bot antiguo era justamente que `/set_alert_channel` escribia un
@@ -18,11 +18,11 @@ export const setChannelCommand: CommandDefinition = {
     .setDescription("Fija el canal de publicacion del estado y crea o edita el mensaje")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addChannelOption((option) =>
-      option.setName("canal").setDescription("Canal donde publicar (por defecto, el actual)"),
+      option.setName("channel").setDescription("Canal donde publicar (por defecto, el actual)"),
     ),
 
   async execute(interaction, context) {
-    const channelId = interaction.getString("canal") ?? interaction.channelId;
+    const channelId = interaction.getString("channel") ?? interaction.channelId;
     if (!SNOWFLAKE.test(channelId)) {
       await interaction.reply({
         content: `❌ ${channelId} no es un id de canal valido.`,
