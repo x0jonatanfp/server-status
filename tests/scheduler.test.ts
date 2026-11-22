@@ -81,7 +81,7 @@ class FakePublisher implements StatusPublisherPort {
       this.calls.push({ existing: existingMessageId, published: existingMessageId });
       return { messageId: existingMessageId, created: false };
     }
-    const messageId = `mensaje-${++this.counter}`;
+    const messageId = `message-${++this.counter}`;
     this.messages.set(messageId, view_);
     this.calls.push({ existing: existingMessageId, published: messageId });
     return { messageId, created: true };
@@ -135,8 +135,8 @@ describe("StatusLoop", () => {
     expect(publisher.messages.size).toBe(1);
     expect(second.messageId).toBe(first.messageId);
     expect(publisher.calls).toEqual([
-      { existing: null, published: "mensaje-1" },
-      { existing: "mensaje-1", published: "mensaje-1" },
+      { existing: null, published: "message-1" },
+      { existing: "message-1", published: "message-1" },
     ]);
   });
 
@@ -162,12 +162,12 @@ describe("StatusLoop", () => {
     const { loop, store } = build({ storePath, publisher });
 
     // Estado de un mensaje que se ha borrado a mano en Discord.
-    await store.setMessageId(CHANNEL, "mensaje-borrado");
+    await store.setMessageId(CHANNEL, "message-deleted");
     const result = await loop.runOnce("interval");
 
     expect(result.created).toBe(true);
-    expect(result.messageId).toBe("mensaje-1");
-    expect(await store.getMessageId(CHANNEL)).toBe("mensaje-1");
+    expect(result.messageId).toBe("message-1");
+    expect(await store.getMessageId(CHANNEL)).toBe("message-1");
   });
 
   it("un fallo de recoleccion no para el bucle", async () => {

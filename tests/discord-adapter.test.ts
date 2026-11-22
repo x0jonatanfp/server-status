@@ -52,7 +52,7 @@ function fakeChannel(messages = new Map<string, StatusView>()): {
   const channel: StatusChannel = {
     async send() {
       state.sends += 1;
-      const id = `mensaje-${messages.size + 1}`;
+      const id = `message-${messages.size + 1}`;
       messages.set(id, view());
       return { id };
     },
@@ -362,14 +362,14 @@ describe("createBotStatusPort", () => {
 
 describe("createDiscordPublisher", () => {
   it("edita el mensaje guardado y no crea otro", async () => {
-    const messages = new Map<string, StatusView>([["mensaje-1", view()]]);
+    const messages = new Map<string, StatusView>([["message-1", view()]]);
     const fake = fakeChannel(messages);
     const resolver: ChannelResolver = { resolve: async () => fake.channel };
     const publisher = createDiscordPublisher(resolver, logger());
 
-    const result = await publisher.publish("123", view(), "mensaje-1");
+    const result = await publisher.publish("123", view(), "message-1");
 
-    expect(result).toEqual({ messageId: "mensaje-1", created: false });
+    expect(result).toEqual({ messageId: "message-1", created: false });
     expect(fake.sends).toBe(0);
     expect(fake.edits).toBe(1);
   });
@@ -378,10 +378,10 @@ describe("createDiscordPublisher", () => {
     const fake = fakeChannel();
     const publisher = createDiscordPublisher({ resolve: async () => fake.channel }, logger());
 
-    const result = await publisher.publish("123", view(), "mensaje-borrado");
+    const result = await publisher.publish("123", view(), "message-deleted");
 
     expect(result.created).toBe(true);
-    expect(result.messageId).toBe("mensaje-1");
+    expect(result.messageId).toBe("message-1");
     expect(fake.sends).toBe(1);
   });
 
@@ -396,7 +396,7 @@ describe("createDiscordPublisher", () => {
     };
     const publisher = createDiscordPublisher({ resolve: async () => channel }, logger());
 
-    await expect(publisher.publish("123", view(), "mensaje-1")).rejects.toThrowError(
+    await expect(publisher.publish("123", view(), "message-1")).rejects.toThrowError(
       "Missing Permissions",
     );
   });

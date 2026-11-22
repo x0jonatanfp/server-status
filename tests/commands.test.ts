@@ -88,7 +88,7 @@ class FakePublisher implements StatusPublisherPort {
 
   async publish(_channelId: string, view_: StatusView, existing: string | null) {
     this.runs += 1;
-    const id = existing && this.messages.has(existing) ? existing : `mensaje-${this.messages.size + 1}`;
+    const id = existing && this.messages.has(existing) ? existing : `message-${this.messages.size + 1}`;
     const created = !this.messages.has(id);
     this.messages.set(id, view_);
     return { messageId: id, created };

@@ -186,7 +186,7 @@ describe("lector de hwmon", () => {
       { source: "hwmon", chip: "k10temp", label: "Tctl", name: "CPU", warn: 75, crit: 90 },
       { source: "hwmon", chip: "nvme", label: "Composite", name: "NVMe", warn: 70, crit: 79 },
       { source: "hwmon", chip: "it8792", index: 1, name: "Placa", warn: 60, crit: 80 },
-      { source: "hwmon", chip: "inexistente", name: "Fantasma", warn: 50, crit: 60 },
+      { source: "hwmon", chip: "nonexistent", name: "Ghost", warn: 50, crit: 60 },
     ]);
 
     // hwmon publica miligrados y el filtro es del dominio, aqui no se aplica.

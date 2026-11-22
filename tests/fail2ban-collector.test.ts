@@ -149,8 +149,8 @@ describe("desbaneo", () => {
     };
     const client = createFail2banClient({ exec });
 
-    const invalidas = ["", "no-es-una-ip", "1.2.3.4; rm -rf /", "999.999.999.999", "$(whoami)"];
-    for (const ip of invalidas) {
+    const invalidIps = ["", "no-es-una-ip", "1.2.3.4; rm -rf /", "999.999.999.999", "$(whoami)"];
+    for (const ip of invalidIps) {
       await expect(client.unban(ip)).rejects.toBeInstanceOf(InvalidIpError);
     }
     expect(calls).toEqual([]);
