@@ -191,7 +191,7 @@ describe("registro de comandos", () => {
     expect(unban?.options?.[0]).toMatchObject({ name: "ip", required: true, type: 3 });
 
     const setChannel = findCommand("set_channel")?.data.toJSON();
-    expect(setChannel?.options?.[0]).toMatchObject({ name: "channel", type: 7 });
+    expect(setChannel?.options?.[0]).toMatchObject({ name: "canal", type: 7 });
   });
 });
 
@@ -204,8 +204,8 @@ describe("/status", () => {
     expect(replies[0]?.ephemeral).toBe(true);
   });
 
-  it("responde en el canal si se pide public", async () => {
-    const replies = await run("status", new FakeInteraction({ public: true }), harness().context);
+  it("responde en el canal si se pide publico", async () => {
+    const replies = await run("status", new FakeInteraction({ publico: true }), harness().context);
     expect(replies[0]?.ephemeral).toBe(false);
   });
 
@@ -224,7 +224,7 @@ describe("/status", () => {
 describe("/set_channel", () => {
   it("fija el canal, lo persiste y publica el mensaje", async () => {
     const { context, publisher, store } = harness();
-    const replies = await run("set_channel", new FakeInteraction({ channel: CHANNEL }), context);
+    const replies = await run("set_channel", new FakeInteraction({ canal: CHANNEL }), context);
 
     expect(replies[0]?.content).toContain(`<#${CHANNEL}>`);
     expect(context.scheduler.channelId).toBe(CHANNEL);
@@ -237,7 +237,7 @@ describe("/set_channel", () => {
     const current = await run("set_channel", new FakeInteraction(), context);
     expect(current[0]?.content).toContain(`<#${CHANNEL}>`);
 
-    const invalid = await run("set_channel", new FakeInteraction({ channel: "not-an-id" }), context);
+    const invalid = await run("set_channel", new FakeInteraction({ canal: "no-soy-un-id" }), context);
     expect(invalid[0]?.content).toContain("no es un id de canal valido");
   });
 });
