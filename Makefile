@@ -1,6 +1,16 @@
 NAME := server-status
-DEST := /srv/services/$(NAME)
+DEST ?= /srv/services/$(NAME)
 SERVICE := $(NAME)
+SYSTEMD_UNIT := /etc/systemd/system/$(SERVICE).service
+# Usuario, grupo, home y binario de Node con los que se renderizan las
+# plantillas: por defecto los del usuario que invoca make, sobrescribibles.
+DEPLOY_USER ?= $(shell id -un)
+DEPLOY_GROUP ?= $(shell id -gn)
+DEPLOY_HOME ?= $(shell getent passwd $(DEPLOY_USER) | cut -d: -f6)
+NODE_BIN ?= $(shell command -v node 2>/dev/null || echo /usr/bin/node)
+# Ficheros temporales donde se renderizan las plantillas antes de instalarlas.
+RENDERED_UNIT := /tmp/$(SERVICE).service.render
+RENDERED_TMPFILES := /tmp/$(SERVICE).tmpfiles.render
 
 .PHONY: build check install deploy restart status logs
 
@@ -18,15 +28,30 @@ test:
 lint:
 	pnpm lint
 
-# Instalacion inicial (una sola vez): unidad de systemd, tmpfiles y logrotate.
-# Necesita sudo. `make deploy` ya solo actualiza el codigo.
+# Instalacion inicial (una sola vez): renderiza las plantillas con el usuario,
+# grupo, home, destino y binario de Node de la maquina, e instala la unidad, el
+# tmpfiles y el logrotate. Necesita sudo. `make deploy` ya solo actualiza el
+# codigo, pero debe usar el mismo DEST con el que se instalo.
 install:
-	sudo install -m 644 deploy/server-status.service /etc/systemd/system/server-status.service
-	sudo install -m 644 deploy/server-status.tmpfiles.conf /etc/tmpfiles.d/server-status.conf
-	sudo install -m 644 deploy/server-status.logrotate.conf /etc/logrotate.d/server-status
-	sudo systemd-tmpfiles --create /etc/tmpfiles.d/server-status.conf
+	rm -f $(RENDERED_UNIT)
+	sed -e 's|@DEPLOY_USER@|$(DEPLOY_USER)|g' \
+		-e 's|@DEPLOY_GROUP@|$(DEPLOY_GROUP)|g' \
+		-e 's|@DEPLOY_HOME@|$(DEPLOY_HOME)|g' \
+		-e 's|@DEST@|$(DEST)|g' \
+		-e 's|@NODE_BIN@|$(NODE_BIN)|g' \
+		deploy/$(SERVICE).service > $(RENDERED_UNIT)
+	sudo install -m 644 $(RENDERED_UNIT) $(SYSTEMD_UNIT)
+	rm -f $(RENDERED_UNIT)
+	rm -f $(RENDERED_TMPFILES)
+	sed -e 's|@DEPLOY_USER@|$(DEPLOY_USER)|g' \
+		-e 's|@DEPLOY_GROUP@|$(DEPLOY_GROUP)|g' \
+		deploy/$(SERVICE).tmpfiles.conf > $(RENDERED_TMPFILES)
+	sudo install -m 644 $(RENDERED_TMPFILES) /etc/tmpfiles.d/$(SERVICE).conf
+	rm -f $(RENDERED_TMPFILES)
+	sudo install -m 644 deploy/$(SERVICE).logrotate.conf /etc/logrotate.d/$(SERVICE)
+	sudo systemd-tmpfiles --create /etc/tmpfiles.d/$(SERVICE).conf
 	sudo systemctl daemon-reload
-	sudo systemctl enable server-status.service
+	sudo systemctl enable $(SERVICE).service
 
 # El bundle de esbuild es autocontenido: dist/index.js no necesita node_modules
 # en destino. Solo viajan el codigo, el manifiesto y el inventario.

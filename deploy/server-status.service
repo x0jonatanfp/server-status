@@ -1,3 +1,5 @@
+# Plantilla para systemd: `make install` sustituye los marcadores @...@ por el
+# usuario, grupo, home, destino y binario de Node del entorno.
 [Unit]
 Description=Server Status — estado del servidor en Discord
 After=network-online.target
@@ -7,13 +9,14 @@ StartLimitBurst=15
 
 [Service]
 Type=simple
-User=cultofskaro
-Group=cultofskaro
-WorkingDirectory=/srv/services/server-status
-Environment=HOME=/home/cultofskaro
+User=@DEPLOY_USER@
+Group=@DEPLOY_GROUP@
+WorkingDirectory=@DEST@
+Environment=HOME=@DEPLOY_HOME@
 Environment=LOG_FILE=/var/log/server-status.log
-# El lanzador carga /srv/services/server-status/.env (token y canales).
-ExecStart=/home/cultofskaro/.secrets/bin/run srv:server-status -- /usr/bin/node dist/index.js
+# El lanzador de secretos carga el .env del destino (token y canales). Si no se
+# usa, se cambia por la invocacion directa de @NODE_BIN@.
+ExecStart=@DEPLOY_HOME@/.secrets/bin/run srv:server-status -- @NODE_BIN@ dist/index.js
 Restart=always
 RestartSec=15
 UMask=0077
