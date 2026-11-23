@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.0.0](https://github.com/x0jonatanfp/server-status/compare/v1.3.2...v2.0.0) (2026-11-23)
+
+### ⚠ BREAKING CHANGES
+
+* las opciones de los comandos de Discord cambian de nombre (`publico` a `public`, `canal` a `channel`); quien las usaba tiene que escribir el nombre nuevo. Se republican solas al arrancar el bot.
+
+* refactor!(discord): renombra las opciones a public y channel ([90c34b4](https://github.com/x0jonatanfp/server-status/commit/90c34b47a0691b3eb849e703b03a682952bc2b24))
+
+### Features
+
+* **deploy:** renderiza las plantillas de systemd en make install ([fbdef34](https://github.com/x0jonatanfp/server-status/commit/fbdef3420d7681304329a8175bebc70fbd408206))
+
+### Bug Fixes
+
+* **discord:** usa una IP de documentación en el ejemplo de /help-unban ([e79c6b3](https://github.com/x0jonatanfp/server-status/commit/e79c6b38ea20caecd65d52baeaca9856c0f2806b))
+
 ## 1.3.2 (2026-11-14)
 
 ### Features
