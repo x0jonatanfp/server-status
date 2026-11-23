@@ -39,7 +39,7 @@ export const helpUnbanCommand: CommandDefinition = {
         "1. Averigua tu IP pública en <https://ifconfig.me>.",
         "2. Escribe el comando con esa IP: `/unban <ip>`",
         "",
-        "Por ejemplo: `/unban 80.58.61.250`",
+        "Por ejemplo: `/unban 203.0.113.7`",
       ].join("\n"),
 
       [
