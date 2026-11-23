@@ -41,7 +41,7 @@ Flow: `StatusLoop` → `collectStatus` (ports) → `renderer` → `publisher` (e
 | `pnpm test` / `test:watch` / `test:coverage` | Vitest. |
 | `make check` | typecheck, test and lint. |
 | `make deploy` | Depends on `release`: runs the versioning and `git push --follow-tags`. Then it builds, syncs `dist/`, copies `package.json` and `inventory.yaml` to the destination, and restarts the unit. **Uses `sudo` and publishes to the remote. Do not run it without an explicit order.** |
-| `make install` | Installs the unit, tmpfiles and logrotate, and enables the unit. **Once only, with `sudo`.** |
+| `make install` | Renders the `deploy/` templates (`@DEPLOY_USER@`, `@DEPLOY_HOME@`, `@DEST@`...) and installs the unit, tmpfiles and logrotate, and enables the unit. **Once only, with `sudo`.** |
 | `make release` | Requires a clean tree, runs `commit-and-tag-version` and pushes. |
 | `pnpm restart`, `pnpm status`, `pnpm logs` | Shortcuts to the unit's `systemctl`/`journalctl`. `restart` uses `sudo`. |
 

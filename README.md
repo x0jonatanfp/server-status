@@ -131,18 +131,26 @@ pnpm build       # esbuild -> dist/index.js
 
 ## Deployment
 
-The repository ships `deploy/server-status.service` (system-wide systemd) and a
-`Makefile`:
+The repository ships the templates in `deploy/` (systemd unit, tmpfiles and
+logrotate) and a `Makefile`:
 
 ```bash
 make check      # typecheck, tests and lint
-make deploy     # build + rsync to /srv/services/server-status + restart
+make install    # renders the templates and installs the unit (once, with sudo)
+make deploy     # build + rsync to <DEST> + restart
 make logs       # service journalctl
 ```
 
+`make install` replaces the template placeholders (`@DEPLOY_USER@`,
+`@DEPLOY_GROUP@`, `@DEPLOY_HOME@`, `@DEST@` and `@NODE_BIN@`) with the values of
+your machine: the user running `make`, its group and home, its Node binary and
+the `DEST` destination. For another destination:
+`make install DEST=/path/to/service` (and the same `DEST` in `make deploy`).
+
 The esbuild bundle is self-contained: `dist/index.js` does not need
-`node_modules` at the destination. Adjust the paths in the `Makefile` and the `.service` to your
-machine.
+`node_modules` at the destination. The unit template starts the bot through a
+secrets launcher of your machine; if you do not use one, change `ExecStart` to
+invoke Node directly.
 
 ## License
 
