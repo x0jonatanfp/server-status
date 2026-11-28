@@ -27,7 +27,7 @@
     "discord.js": "^14.27.0",
     "dotenv": "^17.4.2",
     "js-yaml": "^5.4.2",
-    "systeminformation": "^5.33.10",
+    "systeminformation": "^5.33.16",
     "winston": "^3.19.0"
   },
   "devDependencies": {
