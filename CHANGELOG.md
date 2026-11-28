@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.0.1](https://github.com/x0jonatanfp/server-status/compare/v2.0.0...v2.0.1) (2026-11-28)
+
+### Bug Fixes
+
+* **deps:** actualiza systeminformation a 5.33.16 y undici a 6.29.1 ([ca0c781](https://github.com/x0jonatanfp/server-status/commit/ca0c78167b33ff33378d919547562ca480706a4c))
+
 ## [2.0.0](https://github.com/x0jonatanfp/server-status/compare/v1.3.2...v2.0.0) (2026-11-23)
 
 ### ⚠ BREAKING CHANGES
